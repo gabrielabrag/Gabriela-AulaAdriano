@@ -65,18 +65,29 @@ namespace ControleDeProdutosAula.Repository
 
 			return await Task.FromResult(clienteDB);
 		}
+        public async Task<bool> Apagar(long id)
+        {
+            ClienteModel clienteDB = await ListarPorId(id);
 
-		public async Task<bool> Apagar(long id)
-		{
-			ClienteModel clienteDB = await ListarPorId(id);
+            if (clienteDB == null) throw new System.Exception("Houve um erro na exclusão do cliente");
 
-			if (clienteDB == null) throw new System.Exception("Houve um erro na exclusão do cliente");
-			_bancoContext.Cliente.Remove(clienteDB);
-			await _bancoContext.SaveChangesAsync();
+            // Recupere os registros de Endereco relacionados a este cliente
+            var enderecosRelacionados = await _bancoContext.Endereco
+                .Where(e => e.ClienteId == id)
+                .ToListAsync();
 
-			return await Task.FromResult(true);
-		}
+            // Exclua manualmente os registros de Endereco relacionados
+            _bancoContext.Endereco.RemoveRange(enderecosRelacionados);
 
+            // Agora, você pode excluir o cliente
+            _bancoContext.Cliente.Remove(clienteDB);
+
+            // Salve as alterações no banco de dados
+            await _bancoContext.SaveChangesAsync();
+
+            return await Task.FromResult(true);
+        }
+       
 		public async Task<bool> AtivarDesativar(long id)
 		{
 			ClienteModel clienteDB = await ListarPorId(id);
